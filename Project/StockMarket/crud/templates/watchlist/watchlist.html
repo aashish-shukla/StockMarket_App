@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Watchlist - StockMarket Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-heart me-2"></i>My Watchlist</h1>
+    <a href="{% url 'crud:stock_list' %}" class="btn btn-outline-primary">
+        <i class="fas fa-plus me-2"></i>Add More Stocks
+    </a>
+</div>
+
+{% if watchlist_items %}
+<div class="row">
+    {% for item in watchlist_items %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card watchlist-item">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ item.stock.symbol }}</h5>
+                    <a href="{% url 'crud:remove_from_watchlist' item.stock.symbol %}" 
+                       class="btn btn-sm btn-outline-danger" 
+                       onclick="return confirm('Remove {{ item.stock.symbol }} from watchlist?')">
+                        <i class="fas fa-heart-broken"></i>
+                    </a>
+                </div>
+                
+                <p class="card-text text-muted">{{ item.stock.name|truncatechars:40 }}</p>
+                
+                <div class="mb-3">
+                    <h4 class="text-primary">${{ item.stock.current_price|floatformat:2 }}</h4>
+                    {% if item.stock.price_change >= 0 %}
+                        <span class="text-success">
+                            <i class="fas fa-arrow-up"></i> +${{ item.stock.price_change|floatformat:2 }} 
+                            (+{{ item.stock.price_change_percent|floatformat:2 }}%)
+                        </span>
+                    {% else %}
+                        <span class="text-danger">
+                            <i class="fas fa-arrow-down"></i> ${{ item.stock.price_change|floatformat:2 }} 
+                            ({{ item.stock.price_change_percent|floatformat:2 }}%)
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'crud:stock_detail' item.stock.symbol %}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>View Details
+                    </a>
+                    <a href="{% url 'crud:buy_stock' item.stock.symbol %}" class="btn btn-success">
+                        <i class="fas fa-shopping-cart me-2"></i>Buy Stock
+                    </a>
+                </div>
+                
+                <small class="text-muted">Added {{ item.added_at|timesince }} ago</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-heart fa-5x text-muted mb-3"></i>
+    <h3>Empty Watchlist</h3>
+    <p class="text-muted">Add stocks to your watchlist to track them easily</p>
+    <a href="{% url 'crud:stock_list' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-search me-2"></i>Browse Stocks
+    </a>
+</div>
+{% endif %}
+{% endblock %}

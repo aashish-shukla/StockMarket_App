@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - StockMarket Pro{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-gradient text-white p-5 rounded mb-5">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h1 class="display-4 fw-bold">Welcome to StockMarket Pro</h1>
+            <p class="lead">Your gateway to smart investing and portfolio management</p>
+            {% if not user.is_authenticated %}
+            <div class="mt-4">
+                <a href="{% url 'crud:register' %}" class="btn btn-light btn-lg me-3">Get Started</a>
+                <a href="{% url 'crud:login' %}" class="btn btn-outline-light btn-lg">Login</a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6 text-center">
+            <i class="fas fa-chart-line display-1"></i>
+        </div>
+    </div>
+</div>
+
+{% if user.is_authenticated and portfolio_summary %}
+<!-- Portfolio Summary -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="fas fa-briefcase me-2"></i>Portfolio Overview</h2>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="portfolio-card balance-card">
+            <div class="portfolio-card-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="portfolio-card-content">
+                <span class="portfolio-card-label">Balance</span>
+                <h3 class="portfolio-card-value">${{ portfolio_summary.balance|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="portfolio-card invested-card">
+            <div class="portfolio-card-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="portfolio-card-content">
+                <span class="portfolio-card-label">Invested</span>
+                <h3 class="portfolio-card-value">${{ portfolio_summary.total_invested|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="portfolio-card current-value-card">
+            <div class="portfolio-card-icon">
+                <i class="fas fa-chart-area"></i>
+            </div>
+            <div class="portfolio-card-content">
+                <span class="portfolio-card-label">Current Value</span>
+                <h3 class="portfolio-card-value">${{ portfolio_summary.current_value|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="portfolio-card {% if portfolio_summary.total_profit_loss >= 0 %}profit-card{% else %}loss-card{% endif %}">
+            <div class="portfolio-card-icon">
+                {% if portfolio_summary.total_profit_loss >= 0 %}
+                <i class="fas fa-arrow-trend-up"></i>
+                {% else %}
+                <i class="fas fa-arrow-trend-down"></i>
+                {% endif %}
+            </div>
+            <div class="portfolio-card-content">
+                <span class="portfolio-card-label">P&L</span>
+                <h3 class="portfolio-card-value">
+                    {% if portfolio_summary.total_profit_loss >= 0 %}+{% endif %}${{ portfolio_summary.total_profit_loss|floatformat:2 }}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top Stocks -->
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="fas fa-star me-2"></i>Featured Stocks</h2>
+    </div>
+    {% for stock in top_stocks %}
+    <div class="col-md-4 mb-4">
+        <div class="featured-stock-card">
+            <div class="featured-stock-header">
+                <div class="featured-stock-symbol">
+                    <i class="fas fa-chart-line"></i>
+                    <span>{{ stock.symbol }}</span>
+                </div>
+                <div class="featured-stock-price">
+                    ${{ stock.current_price|floatformat:2 }}
+                </div>
+            </div>
+            <div class="featured-stock-name">
+                {{ stock.name|truncatechars:40 }}
+            </div>
+            <div class="featured-stock-change">
+                {% if stock.price_change >= 0 %}
+                <span class="change-positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +{{ stock.price_change_percent|floatformat:2 }}%
+                </span>
+                {% else %}
+                <span class="change-negative">
+                    <i class="fas fa-arrow-down"></i>
+                    {{ stock.price_change_percent|floatformat:2 }}%
+                </span>
+                {% endif %}
+            </div>
+            <div class="featured-stock-actions">
+                <a href="{% url 'crud:stock_detail' stock.symbol %}" class="btn-view-stock">
+                    <i class="fas fa-eye"></i>
+                    View Details
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Quick Actions -->
+{% if user.is_authenticated %}
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="fas fa-bolt me-2"></i>Quick Actions</h2>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card action-card">
+            <div class="card-body text-center">
+                <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                <h5>Explore Stocks</h5>
+                <p>Browse and analyze stocks</p>
+                <a href="{% url 'crud:stock_list' %}" class="btn btn-primary">Browse Stocks</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card action-card">
+            <div class="card-body text-center">
+                <i class="fas fa-briefcase fa-3x text-success mb-3"></i>
+                <h5>View Portfolio</h5>
+                <p>Check your investments</p>
+                <a href="{% url 'crud:portfolio' %}" class="btn btn-success">View Portfolio</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card action-card">
+            <div class="card-body text-center">
+                <i class="fas fa-heart fa-3x text-danger mb-3"></i>
+                <h5>Watchlist</h5>
+                <p>Track your favorite stocks</p>
+                <a href="{% url 'crud:watchlist' %}" class="btn btn-danger">View Watchlist</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

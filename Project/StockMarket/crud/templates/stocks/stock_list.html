@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Stocks - StockMarket Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chart-line me-2"></i>Stock Market</h1>
+    <button class="btn btn-outline-primary" onclick="refreshAllPrices()">
+        <i class="fas fa-sync-alt me-2"></i>Refresh Prices
+    </button>
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form method="get" class="d-flex">
+            <input type="text" name="search" class="form-control search-box me-2" 
+                   placeholder="Search stocks by symbol or name..." 
+                   value="{{ search_query }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Stocks Table -->
+<div class="stock-table">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Company Name</th>
+                <th>Price</th>
+                <th>Change</th>
+                <th>Change %</th>
+                <th>Volume</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in page_obj %}
+            <tr data-symbol="{{ stock.symbol }}">
+                <td>
+                    <strong class="text-primary">{{ stock.symbol }}</strong>
+                </td>
+                <td>{{ stock.name|truncatechars:40 }}</td>
+                <td class="stock-price">
+                    <span class="price-display">${{ stock.current_price|floatformat:2 }}</span>
+                </td>
+                <td class="price-change">
+                    {% if stock.price_change >= 0 %}
+                        <span class="text-success">
+                            <i class="fas fa-arrow-up"></i> +${{ stock.price_change|floatformat:2 }}
+                        </span>
+                    {% else %}
+                        <span class="text-danger">
+                            <i class="fas fa-arrow-down"></i> ${{ stock.price_change|floatformat:2 }}
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="price-change-percent">
+                    {% if stock.price_change_percent >= 0 %}
+                        <span class="text-success">+{{ stock.price_change_percent|floatformat:2 }}%</span>
+                    {% else %}
+                        <span class="text-danger">{{ stock.price_change_percent|floatformat:2 }}%</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if stock.volume %}
+                        {{ stock.volume|floatformat:0 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'crud:stock_detail' stock.symbol %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'crud:buy_stock' stock.symbol %}" class="btn btn-sm btn-success">
+                            <i class="fas fa-shopping-cart"></i> Buy
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No stocks found.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Stock pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">Last</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshAllPrices() {
+    const symbols = [];
+    document.querySelectorAll('[data-symbol]').forEach(row => {
+        symbols.push(row.dataset.symbol);
+    });
+    
+    symbols.forEach(symbol => {
+        updateStockPrice(symbol);
+    });
+}
+
+function updateStockPrice(symbol) {
+    fetch(`/api/update-stock/${symbol}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateStockRow(symbol, data);
+        }
+    })
+    .catch(error => console.error('Error updating stock price:', error));
+}
+
+function updateStockRow(symbol, data) {
+    const row = document.querySelector(`[data-symbol="${symbol}"]`);
+    if (row) {
+        const priceCell = row.querySelector('.price-display');
+        const changeCell = row.querySelector('.price-change');
+        const changePercentCell = row.querySelector('.price-change-percent');
+        
+        if (priceCell) priceCell.textContent = `$${data.current_price.toFixed(2)}`;
+        
+        if (changeCell) {
+            const changeClass = data.price_change >= 0 ? 'text-success' : 'text-danger';
+            const changeIcon = data.price_change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            const changeSign = data.price_change >= 0 ? '+' : '';
+            changeCell.innerHTML = `<span class="${changeClass}"><i class="fas ${changeIcon}"></i> ${changeSign}$${data.price_change.toFixed(2)}</span>`;
+        }
+        
+        if (changePercentCell) {
+            const changeClass = data.price_change_percent >= 0 ? 'text-success' : 'text-danger';
+            const changeSign = data.price_change_percent >= 0 ? '+' : '';
+            changePercentCell.innerHTML = `<span class="${changeClass}">${changeSign}${data.price_change_percent.toFixed(2)}%</span>`;
+        }
+    }
+}
+</script>
+{% endblock %}

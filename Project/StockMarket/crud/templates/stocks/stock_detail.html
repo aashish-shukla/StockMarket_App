@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ stock.symbol }} - StockMarket Pro{% endblock %}
+
+{% block content %}
+<!-- Stock Header -->
+<div class="stock-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-2">{{ stock.symbol }} <small class="text-white-50">{{ stock.name }}</small></h1>
+            <div class="stock-price">${{ stock.current_price|floatformat:2 }}</div>
+            <div class="price-change {% if stock.price_change >= 0 %}positive{% else %}negative{% endif %}">
+                {% if stock.price_change >= 0 %}
+                    <i class="fas fa-arrow-up"></i> +${{ stock.price_change|floatformat:2 }} (+{{ stock.price_change_percent|floatformat:2 }}%)
+                {% else %}
+                    <i class="fas fa-arrow-down"></i> ${{ stock.price_change|floatformat:2 }} ({{ stock.price_change_percent|floatformat:2 }}%)
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if user.is_authenticated %}
+            <div class="d-grid gap-2">
+                <a href="{% url 'crud:buy_stock' stock.symbol %}" class="btn btn-success btn-lg">
+                    <i class="fas fa-shopping-cart me-2"></i>Buy Stock
+                </a>
+                {% if user_portfolio %}
+                <a href="{% url 'crud:sell_stock' stock.symbol %}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-minus-circle me-2"></i>Sell Stock
+                </a>
+                {% endif %}
+                {% if not in_watchlist %}
+                <a href="{% url 'crud:add_to_watchlist' stock.symbol %}" class="btn btn-outline-light">
+                    <i class="fas fa-heart me-2"></i>Add to Watchlist
+                </a>
+                {% else %}
+                <a href="{% url 'crud:remove_from_watchlist' stock.symbol %}" class="btn btn-outline-light">
+                    <i class="fas fa-heart-broken me-2"></i>Remove from Watchlist
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Stock Information -->
+    <div class="col-lg-8">
+        <!-- Stock Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar me-2"></i>Stock Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Previous Close:</strong></td>
+                                <td>${{ stock.previous_close|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Market Cap:</strong></td>
+                                <td>
+                                    {% if stock.market_cap %}
+                                        ${{ stock.market_cap|floatformat:0 }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Volume:</strong></td>
+                                <td>
+                                    {% if stock.volume %}
+                                        {{ stock.volume|floatformat:0 }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>P/E Ratio:</strong></td>
+                                <td>
+                                    {% if stock.pe_ratio %}
+                                        {{ stock.pe_ratio|floatformat:2 }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Last Updated:</strong></td>
+                                <td>{{ stock.last_updated|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Information -->
+        {% if user.is_authenticated and user_portfolio %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-briefcase me-2"></i>Your Position</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6>Shares Owned</h6>
+                            <h4 class="text-primary">{{ user_portfolio.quantity }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6>Average Price</h6>
+                            <h4 class="text-info">${{ user_portfolio.average_price|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6>Current Value</h6>
+                            <h4 class="text-success">${{ user_portfolio.current_value|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6>P&L</h6>
+                            {% if user_portfolio.profit_loss >= 0 %}
+                                <h4 class="text-success">+${{ user_portfolio.profit_loss|floatformat:2 }}</h4>
+                                <small class="text-success">(+{{ user_portfolio.profit_loss_percent|floatformat:2 }}%)</small>
+                            {% else %}
+                                <h4 class="text-danger">${{ user_portfolio.profit_loss|floatformat:2 }}</h4>
+                                <small class="text-danger">({{ user_portfolio.profit_loss_percent|floatformat:2 }}%)</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Transactions -->
+        {% if recent_transactions %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-history me-2"></i>Recent Transactions</h5>
+            </div>
+            <div class="card-body">
+                {% for transaction in recent_transactions %}
+                <div class="transaction-item {{ transaction.transaction_type|lower }}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ transaction.user.username }}</strong>
+                            {% if transaction.transaction_type == 'BUY' %}
+                                <span class="text-success">bought</span>
+                            {% else %}
+                                <span class="text-danger">sold</span>
+                            {% endif %}
+                            {{ transaction.quantity }} shares
+                        </div>
+                        <div class="text-end">
+                            <div>${{ transaction.price|floatformat:2 }} per share</div>
+                            <small class="text-muted">{{ transaction.timestamp|timesince }} ago</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Stock News -->
+        {% if news %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-newspaper me-2"></i>Latest News</h5>
+            </div>
+            <div class="card-body">
+                {% for article in news %}
+                <div class="news-item">
+                    <h6><a href="{{ article.url }}" target="_blank" class="text-decoration-none">{{ article.title|truncatechars:80 }}</a></h6>
+                    <p class="text-muted small">{{ article.description|truncatechars:100 }}</p>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">{{ article.source }}</small>
+                        <small class="text-muted">{{ article.published_date|timesince }} ago</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="updateStockPrice('{{ stock.symbol }}')">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Price
+                    </button>
+                    <a href="{% url 'crud:stock_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Stocks
+                    </a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'crud:portfolio' %}" class="btn btn-outline-info">
+                        <i class="fas fa-briefcase me-2"></i>View Portfolio
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateStockPrice(symbol) {
+    const button = document.querySelector('button[onclick*="updateStockPrice"]');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+    button.disabled = true;
+    
+    fetch(`/api/update-stock/${symbol}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh page to show updated data
+        } else {
+            alert('Error updating stock price: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating stock price');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>
+{% endblock %}

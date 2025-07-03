@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buy {{ stock.symbol }} - StockMarket Pro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4><i class="fas fa-shopping-cart me-2"></i>Buy {{ stock.symbol }}</h4>
+            </div>
+            <div class="card-body">
+                <!-- Stock Info -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>{{ stock.name }}</h5>
+                        <p class="text-muted">{{ stock.symbol }}</p>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <h3 class="text-success">${{ stock.current_price|floatformat:2 }}</h3>
+                        <p class="text-muted">Current Price</p>
+                    </div>
+                </div>
+
+                <!-- Balance Info -->
+                <div class="alert alert-info">
+                    <i class="fas fa-wallet me-2"></i>
+                    <strong>Available Balance: ${{ user_balance|floatformat:2 }}</strong>
+                </div>
+
+                <!-- Buy Form -->
+                <form method="post" id="buyForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                            <strong>Quantity</strong>
+                        </label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                            <div class="text-danger small">{{ form.quantity.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Real-time Calculation -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Quantity:</strong>
+                                    <span id="displayQuantity">0</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Price per Share:</strong>
+                                    ${{ stock.current_price|floatformat:2 }}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Total Cost:</strong>
+                                    <span id="totalCost" class="text-success">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'crud:stock_detail' stock.symbol %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success" id="buyButton">
+                            <i class="fas fa-shopping-cart me-2"></i>Buy Stock
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const stockPrice = parseFloat("{{ stock.current_price|floatformat:'2' }}");
+const userBalance = parseFloat("{{ user_balance|floatformat:'2' }}");
+const quantityInput = document.getElementById('{{ form.quantity.id_for_label }}');
+const displayQuantity = document.getElementById('displayQuantity');
+const totalCost = document.getElementById('totalCost');
+const buyButton = document.getElementById('buyButton');
+
+function updateCalculation() {
+    const quantity = parseInt(quantityInput.value) || 0;
+    const cost = quantity * stockPrice;
+    
+    displayQuantity.textContent = quantity;
+    totalCost.textContent = `$${cost.toFixed(2)}`;
+    
+    // Update button state
+    if (cost > userBalance) {
+        buyButton.disabled = true;
+        buyButton.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Insufficient Balance';
+        totalCost.className = 'text-danger';
+    } else if (quantity <= 0) {
+        buyButton.disabled = true;
+        buyButton.innerHTML = '<i class="fas fa-shopping-cart me-2"></i>Buy Stock';
+        totalCost.className = 'text-success';
+    } else {
+        buyButton.disabled = false;
+        buyButton.innerHTML = '<i class="fas fa-shopping-cart me-2"></i>Buy Stock';
+        totalCost.className = 'text-success';
+    }
+}
+
+quantityInput.addEventListener('input', updateCalculation);
+updateCalculation(); // Initial calculation
+</script>
+{% endblock %}
