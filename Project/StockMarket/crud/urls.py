@@ -27,4 +27,8 @@ urlpatterns = [
     
     # API endpoints
     path('api/update-stock/<str:symbol>/', views.update_stock_price, name='update_stock_price'),
+    
+    # Email verification URLs
+    path('verify-email/<uuid:token>/', views.verify_email, name='verify_email'),
+    path('resend-verification/', views.resend_verification, name='resend_verification'),
 ]

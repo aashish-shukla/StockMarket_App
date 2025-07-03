@@ -134,6 +134,28 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = 'shuklaaashish90@gmail.com'
+EMAIL_HOST_PASSWORD = 'dqpx aigg ifdp fqzu'
+DEFAULT_FROM_EMAIL = 'StockMarket Pro <shuklaaashish90@gmail.com>'
+
+# SSL Configuration for macOS
+import ssl
+EMAIL_SSL_CERTFILE = None
+EMAIL_SSL_KEYFILE = None
+EMAIL_TIMEOUT = 60
+
+# Email verification settings
+EMAIL_VERIFICATION_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+
+
 # Login URLs
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'

@@ -1,16 +1,25 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User  # Add this import
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Sum, F, Q
 from django.core.paginator import Paginator
 from .models import Stock, Portfolio, Transaction, Watchlist, UserProfile, StockNews
-from .forms import BuyStockForm, SellStockForm
+from .forms import BuyStockForm, SellStockForm, CustomUserCreationForm
 from .services import TiingoService
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.urls import reverse
+import uuid
 import json
-import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 def home(request):
     # Get top performing stocks
@@ -40,19 +49,98 @@ def home(request):
     }
     return render(request, 'home.html', context)
 
+def send_verification_email(request, user, profile):
+    """Send email verification to user"""
+    try:
+        verification_url = request.build_absolute_uri(
+            reverse('crud:verify_email', kwargs={'token': profile.email_verification_token})
+        )
+        
+        subject = 'Verify Your StockMarket Pro Account'
+        html_message = render_to_string('registration/verification_email.html', {
+            'user': user,
+            'verification_url': verification_url,
+        })
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        logger.info(f"Verification email sent to {user.email}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        # Don't raise the exception, just log it
+        pass
+
 def register_view(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            UserProfile.objects.create(user=user)
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Account created for {username}!')
-            login(request, user)
-            return redirect('crud:home')
+            user.is_active = False  # Deactivate until email verification
+            user.save()
+            
+            # Create user profile
+            profile = UserProfile.objects.create(user=user)
+            
+            # Send verification email
+            try:
+                send_verification_email(request, user, profile)
+                messages.success(request, f'Account created for {user.username}! Please check your email to verify your account.')
+            except Exception as e:
+                logger.error(f"Email sending failed: {str(e)}")
+                messages.warning(request, f'Account created for {user.username}! However, we could not send the verification email. Please try to resend it.')
+            
+            return redirect('crud:login')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+def verify_email(request, token):
+    """Verify user email with token"""
+    try:
+        profile = UserProfile.objects.get(email_verification_token=token)
+        if not profile.is_email_verified:
+            profile.is_email_verified = True
+            profile.user.is_active = True
+            profile.user.save()
+            profile.save()
+            
+            messages.success(request, 'Your email has been verified! You can now log in.')
+            return redirect('crud:login')
+        else:
+            messages.info(request, 'Email already verified.')
+            return redirect('crud:login')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Invalid verification token.')
+        return redirect('crud:register')
+
+def resend_verification(request):
+    """Resend verification email"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email, is_active=False)
+            profile = user.userprofile
+            if not profile.is_email_verified:
+                # Generate new token
+                profile.email_verification_token = uuid.uuid4()
+                profile.save()
+                
+                send_verification_email(request, user, profile)
+                messages.success(request, 'Verification email sent!')
+            else:
+                messages.info(request, 'Email already verified.')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found or already active.')
+    
+    return render(request, 'registration/resend_verification.html')
 
 def login_view(request):
     if request.method == 'POST':
@@ -60,8 +148,11 @@ def login_view(request):
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
-            return redirect('crud:home')
+            if user.is_active:
+                login(request, user)
+                return redirect('crud:home')
+            else:
+                messages.error(request, 'Please verify your email before logging in.')
         else:
             messages.error(request, 'Invalid username or password.')
     return render(request, 'registration/login.html')

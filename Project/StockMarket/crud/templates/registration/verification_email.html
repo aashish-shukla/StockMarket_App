@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - StockMarket Pro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 40px 30px;
+            background: white;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+        }
+        .btn-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .verification-link {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+            color: #667eea;
+        }
+        .footer {
+            background: #f8f9fa;
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Welcome to StockMarket Pro!</h1>
+            <p>Your gateway to smart investing</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello {{ user.username }}! 👋</h2>
+            <p>Thank you for joining StockMarket Pro! To complete your registration, please verify your email address by clicking the button below:</p>
+            
+            <div class="btn-container">
+                <a href="{{ verification_url }}" class="btn">✅ Verify Email Address</a>
+            </div>
+            
+            <p>If the button doesn't work, copy and paste this link:</p>
+            <div class="verification-link">{{ verification_url }}</div>
+            
+            <p><strong>This link expires in 24 hours.</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>If you didn't create this account, ignore this email.</p>
+            <p>&copy; 2025 StockMarket Pro. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

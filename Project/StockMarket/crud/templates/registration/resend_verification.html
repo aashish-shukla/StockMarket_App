@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resend Verification - StockMarket Pro{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h2 class="auth-title">Resend Verification</h2>
+                    <p class="auth-subtitle">Enter your email to receive a new verification link</p>
+                </div>
+                
+                <form method="post" class="auth-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>Email Address
+                        </label>
+                        <input type="email" class="form-control" name="email" id="email" 
+                               placeholder="Enter your email address" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary auth-submit-btn">
+                        <i class="fas fa-paper-plane me-2"></i>Resend Verification Email
+                    </button>
+                </form>
+                
+                <div class="auth-footer">
+                    <div class="auth-divider">
+                        <span>Remember your password?</span>
+                    </div>
+                    <a href="{% url 'crud:login' %}" class="btn btn-outline-primary auth-switch-btn">
+                        <i class="fas fa-sign-in-alt me-2"></i>Back to Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
