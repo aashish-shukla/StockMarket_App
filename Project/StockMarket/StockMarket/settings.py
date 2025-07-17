@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'StockMarket.wsgi.application'
 # }
 DATABASES = {
    'default': dj_database_url.parse(
-       'postgresql://postgres:%40Aman12345%23%21@db.uursiuygzvibzvgqodiw.supabase.co:5432/postgres'
+       'postgresql://postgres.uursiuygzvibzvgqodiw:%40Aman12345%23%21@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres'
    )
 }
 
