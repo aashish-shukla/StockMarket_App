@@ -1,10 +1,9 @@
-Django==4.2.7
-requests==2.31.0
-uvicorn==0.23.2
-psycopg2-binary==2.9.6
-dj-database-url==1.0.0
-requests==2.31.0
-pytz==2023.3
-whitenoise==6.4.0
-gunicorn==23.1.0
+Django
+requests
+psycopg2-binary
+dj-database-url
+requests
+pytz
+whitenoise
+gunicorn
 
